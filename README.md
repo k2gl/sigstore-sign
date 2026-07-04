@@ -12,9 +12,9 @@ The Sigstore signing flow, end to end, in PHP: **sign** an artifact or an attest
 
 It ties the family together: [`k2gl/dsse`](https://github.com/k2gl/dsse) signs,
 [`k2gl/rekor-client`](https://github.com/k2gl/rekor-client) logs,
-[`k2gl/sigstore-bundle`](https://github.com/k2gl/sigstore-bundle) is emitted. This release
-covers **keyful** signing (you bring the key and its certificate or a public-key hint);
-keyless signing via Fulcio + OIDC is a later addition.
+[`k2gl/sigstore-bundle`](https://github.com/k2gl/sigstore-bundle) is emitted. It does both
+**keyful** signing (you bring the key and its certificate or a public-key hint) and
+**keyless** signing (an ephemeral key certified by Fulcio against a CI OIDC identity).
 
 ## Requirements
 
@@ -55,6 +55,28 @@ $bundleJson = $signer->signArtifact(file_get_contents('release.tar.gz'), $key)->
 $bundleJson = $signer->signAttestation($statementJson, 'application/vnd.in-toto+json', $key)->toJson();
 ```
 
+### Keyless signing (Fulcio + CI OIDC)
+
+In CI, sign without a long-lived key: read the ambient OIDC identity, let Fulcio certify an
+ephemeral key against it, and sign with that.
+
+```php
+use K2gl\SigstoreSign\{AmbientCredentials, FulcioClient, FulcioSigningKey, SigstoreSigner};
+
+// The CI identity token (GitHub Actions needs `id-token: write`).
+$oidcToken = AmbientCredentials::githubActions($psr18, $psr17);
+// …or AmbientCredentials::gitlabCi() for a GitLab id_token.
+
+$fulcio = new FulcioClient($psr18, $psr17, $psr17, 'https://fulcio.sigstore.dev');
+$key = FulcioSigningKey::create($fulcio, $oidcToken); // ephemeral key + Fulcio certificate
+
+$bundleJson = (new SigstoreSigner($rekor, $tsa))->signArtifact($artifact, $key)->toJson();
+```
+
+`FulcioSigningKey` generates the ephemeral P-256 key, proves possession of it to Fulcio by
+signing the token's `sub`, and returns a `SigningKey` bound to the issued certificate — the
+same type keyful signing uses, so the rest of the flow is identical.
+
 ### Why the timestamp authority matters
 
 A Rekor v2 entry has no integrated time, so a bundle needs a trusted RFC 3161 timestamp to
@@ -73,7 +95,8 @@ assembles but will not verify for lack of a time source.
 ## Errors
 
 Everything thrown implements `K2gl\SigstoreSign\Exception\SigstoreSignException`:
-`SigningException` (the signing flow) and `TimestampException` (the timestamp authority).
+`SigningException` (the signing flow), `TimestampException` (the timestamp authority), and
+`FulcioException` (the OIDC credential or the Fulcio certificate step).
 
 ## Pull requests are always welcome
 [Collaborate with pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)
