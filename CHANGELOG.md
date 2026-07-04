@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.0
+
+- **Keyless signing** — sign in CI with no long-lived key:
+  - **`AmbientCredentials`** reads the OIDC identity token from the environment:
+    `githubActions()` exchanges the runner's request token for a signing-audience token,
+    `gitlabCi()` reads a configured id_token variable.
+  - **`FulcioClient`** requests a signing certificate from Fulcio
+    (`POST /api/v2/signingCert`), given the token, an ephemeral public key and a proof of
+    possession.
+  - **`FulcioSigningKey::create()`** ties it together: generates an ephemeral P-256 key,
+    proves possession by signing the token's `sub`, and returns a `SigningKey` bound to the
+    issued certificate — the same type keyful signing uses, so `SigstoreSigner` is unchanged.
+  - New `FulcioException` for the credential/certificate step.
+
 ## 1.0.0
 
 First public release. The Sigstore signing flow end to end, keyful.
