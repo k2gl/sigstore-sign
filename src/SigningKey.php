@@ -9,6 +9,7 @@ use K2gl\RekorClient\KeyDetails;
 use K2gl\RekorClient\Verifier;
 use K2gl\SigstoreBundle\SigningIdentity;
 use K2gl\SigstoreSign\Exception\SigningException;
+use K2gl\SigstoreSign\Internal\Der;
 
 /**
  * A signing key as this package needs it: the private half (a DSSE {@see Signer}
@@ -26,6 +27,7 @@ final class SigningKey
         private readonly Signer $signer,
         private readonly Verifier $verifier,
         private readonly SigningIdentity $identity,
+        private readonly KeyDetails $keyDetails,
     ) {}
 
     /**
@@ -48,6 +50,7 @@ final class SigningKey
             $signer,
             Verifier::publicKey($publicKeyDer, $keyDetails),
             SigningIdentity::publicKey($hint),
+            $keyDetails,
         );
     }
 
@@ -67,13 +70,39 @@ final class SigningKey
             $signer,
             Verifier::certificate($certificateDer, $keyDetails),
             SigningIdentity::certificate($certificateDer),
+            $keyDetails,
         );
     }
 
-    /** Sign a message (the PAE for an attestation, the artifact for a signature). */
+    /**
+     * Sign a message (the PAE for an attestation, the artifact for a signature).
+     * Sigstore carries ECDSA signatures as ASN.1 DER, but a DSSE signer emits the
+     * raw r||s form, so ECDSA signatures are re-encoded to DER here.
+     */
     public function sign(string $message): string
     {
-        return $this->signer->sign($message);
+        $signature = $this->signer->sign($message);
+
+        return $this->isEcdsa() ? $this->ecdsaRawToDer($signature) : $signature;
+    }
+
+    private function isEcdsa(): bool
+    {
+        return in_array($this->keyDetails, [
+            KeyDetails::PKIX_ECDSA_P256_SHA_256,
+            KeyDetails::PKIX_ECDSA_P384_SHA_384,
+            KeyDetails::PKIX_ECDSA_P521_SHA_512,
+        ], true);
+    }
+
+    private function ecdsaRawToDer(string $raw): string
+    {
+        $half = intdiv(strlen($raw), 2);
+
+        return Der::sequence(
+            Der::integerFromBytes(substr($raw, 0, $half)),
+            Der::integerFromBytes(substr($raw, $half)),
+        );
     }
 
     /** The key id the DSSE signer reports, if any (goes into the envelope signature). */
