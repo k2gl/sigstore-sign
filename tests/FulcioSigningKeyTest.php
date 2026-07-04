@@ -48,6 +48,22 @@ final class FulcioSigningKeyTest extends TestCase
         fact(isset($bundle['verificationMaterial']['certificate']))->true();
     }
 
+    public function testEmailIdentityProofSignsTheEmailNotTheSub(): void
+    {
+        $transport = $this->fulcioTransport();
+        $token = 'h.' . rtrim(strtr(base64_encode(
+            (string) json_encode(['sub' => 'https://accounts.google.com/123', 'email' => 'signer@example.com']),
+        ), '+/', '-_'), '=') . '.s';
+
+        FulcioSigningKey::create($this->fulcio($transport), $token);
+
+        $sent = json_decode($transport->requestBodyMatching('fulcio'), true);
+        $publicKeyPem = $sent['publicKeyRequest']['publicKey']['content'];
+        $proof = base64_decode($sent['publicKeyRequest']['proofOfPossession'], true);
+        // Fulcio uses the email as the challenge subject for an email identity.
+        fact(openssl_verify('signer@example.com', $proof, $publicKeyPem, OPENSSL_ALGO_SHA256))->is(1);
+    }
+
     public function testDetachedSctResponseIsAccepted(): void
     {
         $certPem = $this->certPem();
