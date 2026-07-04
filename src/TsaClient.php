@@ -57,7 +57,7 @@ final class TsaClient
             throw new TimestampException(sprintf('Timestamp authority returned HTTP %d.', $response->getStatusCode()));
         }
 
-        return $this->extractToken((string) $response->getBody());
+        return $this->validated((string) $response->getBody());
     }
 
     /** Build a TimeStampReq (version 1, SHA-256 imprint of the signature, certReq true). */
@@ -75,8 +75,12 @@ final class TsaClient
         );
     }
 
-    /** Pull the TimeStampToken out of a TimeStampResp, checking the status is granted. */
-    private function extractToken(string $response): string
+    /**
+     * Check the status is granted and return the whole DER TimeStampResponse.
+     * A Sigstore bundle stores the full response (PKIStatusInfo + token), not the
+     * token alone, so this returns the bytes as received once validated.
+     */
+    private function validated(string $response): string
     {
         if ($response === '') {
             throw new TimestampException('Timestamp authority returned an empty response.');
@@ -107,6 +111,6 @@ final class TsaClient
             throw new TimestampException('Timestamp response carries no token.');
         }
 
-        return substr($response, $statusInfo['next'], $outer['next'] - $statusInfo['next']);
+        return $response;
     }
 }

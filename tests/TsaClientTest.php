@@ -40,12 +40,13 @@ final class TsaClientTest extends TestCase
         fact(str_contains($body, hash('sha256', 'my-signature', true)))->true();
     }
 
-    public function testReturnsTheTokenFromAGrantedResponse(): void
+    public function testReturnsTheFullResponseFromAGrantedResponse(): void
     {
-        $token = Der::sequence(Der::integer(99));
-        $transport = $this->transport(fn (): ResponseInterface => $this->ok($this->grantedResponse($token)));
+        // A bundle stores the whole TimeStampResponse, not just the token.
+        $response = $this->grantedResponse(Der::sequence(Der::integer(99)));
+        $transport = $this->transport(fn (): ResponseInterface => $this->ok($response));
 
-        fact($this->client($transport)->timestamp('sig'))->is($token);
+        fact($this->client($transport)->timestamp('sig'))->is($response);
     }
 
     public function testRejectionStatusThrows(): void
