@@ -39,11 +39,12 @@ final class FulcioSigningKey
         }
         $publicKeyPem = $details['key'];
 
-        // Prove possession by signing the token's subject. Fulcio expects an
-        // ASN.1 DER ECDSA signature here (not the raw r||s a DSSE signer emits).
+        // Prove possession by signing the challenge subject Fulcio derives from
+        // the token (email or sub). Fulcio expects an ASN.1 DER ECDSA signature
+        // here (not the raw r||s a DSSE signer emits).
         $proof = '';
 
-        if (openssl_sign(Jwt::claim($oidcToken, 'sub'), $proof, $key, OPENSSL_ALGO_SHA256) === false) {
+        if (openssl_sign(Jwt::proofSubject($oidcToken), $proof, $key, OPENSSL_ALGO_SHA256) === false) {
             throw new FulcioException('Could not sign the proof of possession.');
         }
         $certificateDer = $fulcio->requestCertificate($oidcToken, $publicKeyPem, $proof, 'ECDSA');
