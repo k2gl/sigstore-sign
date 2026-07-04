@@ -41,6 +41,20 @@ final class Der
         return self::tlv(0x04, $bytes);
     }
 
+    /** A DER INTEGER from a big-endian magnitude (e.g. an ECDSA r or s value). */
+    public static function integerFromBytes(string $magnitude): string
+    {
+        $value = ltrim($magnitude, "\x00");
+
+        if ($value === '') {
+            $value = "\x00";
+        } elseif ((ord($value[0]) & 0x80) !== 0) {
+            $value = "\x00" . $value; // keep it positive
+        }
+
+        return self::tlv(0x02, $value);
+    }
+
     public static function boolean(bool $value): string
     {
         return self::tlv(0x01, $value ? "\xff" : "\x00");

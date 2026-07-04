@@ -57,6 +57,9 @@ final class SigstoreSignerTest extends TestCase
         $signature = base64_decode($bundle['messageSignature']['signature'], true);
         fact(PublicKey::fromPem($this->publicKeyPem)->verify($artifact, $signature))->true();
 
+        // Sigstore carries ECDSA signatures as ASN.1 DER, not raw r||s.
+        fact(bin2hex($signature[0]))->is('30');
+
         // Shape: v0.3 message-signature bundle, digest = sha256(artifact), a tlog entry, a timestamp.
         fact($bundle['mediaType'])->is('application/vnd.dev.sigstore.bundle.v0.3+json');
         fact(base64_decode($bundle['messageSignature']['messageDigest']['digest'], true))->is(hash('sha256', $artifact, true));
