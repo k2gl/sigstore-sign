@@ -40,7 +40,18 @@
     "phpstan/phpstan": "^2.1",
     "laravel/pint": "~1.20.0",
     "k2gl/phpunit-fluent-assertions": "^12",
-    "nyholm/psr7": "^1.8"
+    "nyholm/psr7": "^1.8",
+    "k2gl/composer-attest": "^1.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "k2gl/composer-attest": true
+    }
+  },
+  "extra": {
+    "k2gl-attest": {
+      "mode": "warn"
+    }
   },
   "autoload": {
     "psr-4": {
