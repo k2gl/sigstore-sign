@@ -51,47 +51,51 @@ final class TsaClientTest extends TestCase
 
     public function testRejectionStatusThrows(): void
     {
-        // PKIStatus 2 = rejection
+        // arrange: PKIStatus 2 = rejection
         $response = Der::sequence(Der::sequence(Der::integer(2)));
         $transport = $this->transport(fn (): ResponseInterface => $this->ok($response));
 
-        $this->expectException(TimestampException::class);
-        $this->client($transport)->timestamp('sig');
+        // act + assert
+        fact(fn () => $this->client($transport)->timestamp('sig'))->throws(TimestampException::class);
     }
 
     public function testMissingTokenThrows(): void
     {
+        // arrange
         $response = Der::sequence(Der::sequence(Der::integer(0))); // granted but no token
         $transport = $this->transport(fn (): ResponseInterface => $this->ok($response));
 
-        $this->expectException(TimestampException::class);
-        $this->client($transport)->timestamp('sig');
+        // act + assert
+        fact(fn () => $this->client($transport)->timestamp('sig'))->throws(TimestampException::class);
     }
 
     public function testNon200Throws(): void
     {
+        // arrange
         $transport = $this->transport(fn (): ResponseInterface => (new Psr17Factory)->createResponse(500));
 
-        $this->expectException(TimestampException::class);
-        $this->client($transport)->timestamp('sig');
+        // act + assert
+        fact(fn () => $this->client($transport)->timestamp('sig'))->throws(TimestampException::class);
     }
 
     public function testEmptyBodyThrows(): void
     {
+        // arrange
         $transport = $this->transport(fn (): ResponseInterface => $this->ok(''));
 
-        $this->expectException(TimestampException::class);
-        $this->client($transport)->timestamp('sig');
+        // act + assert
+        fact(fn () => $this->client($transport)->timestamp('sig'))->throws(TimestampException::class);
     }
 
     public function testTransportErrorThrows(): void
     {
+        // arrange
         $transport = $this->transport(function (): ResponseInterface {
             throw new class ('down') extends RuntimeException implements ClientExceptionInterface {};
         });
 
-        $this->expectException(TimestampException::class);
-        $this->client($transport)->timestamp('sig');
+        // act + assert
+        fact(fn () => $this->client($transport)->timestamp('sig'))->throws(TimestampException::class);
     }
 
     private function grantedResponse(string $token): string

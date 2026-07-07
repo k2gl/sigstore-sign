@@ -71,21 +71,25 @@ final class AmbientCredentialsTest extends TestCase
 
     public function testGithubActionsWithoutEnvThrows(): void
     {
+        // arrange
         $this->setEnv('ACTIONS_ID_TOKEN_REQUEST_URL', '');
         $this->setEnv('ACTIONS_ID_TOKEN_REQUEST_TOKEN', '');
 
-        $this->expectException(FulcioException::class);
-        AmbientCredentials::githubActions(new MockTransport([]), new Psr17Factory);
+        // act + assert
+        fact(static fn () => AmbientCredentials::githubActions(new MockTransport([]), new Psr17Factory))
+            ->throws(FulcioException::class);
     }
 
     public function testGithubActionsNon200Throws(): void
     {
+        // arrange
         $this->setEnv('ACTIONS_ID_TOKEN_REQUEST_URL', 'https://token.example/oidc');
         $this->setEnv('ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'runner-token');
         $transport = new MockTransport(['token.example' => fn (): ResponseInterface => $this->response('nope', 403)]);
 
-        $this->expectException(FulcioException::class);
-        AmbientCredentials::githubActions($transport, new Psr17Factory);
+        // act + assert
+        fact(static fn () => AmbientCredentials::githubActions($transport, new Psr17Factory))
+            ->throws(FulcioException::class);
     }
 
     public function testGitlabReadsTheConfiguredVariable(): void
@@ -97,10 +101,11 @@ final class AmbientCredentialsTest extends TestCase
 
     public function testGitlabMissingVariableThrows(): void
     {
+        // arrange
         $this->setEnv('SIGSTORE_ID_TOKEN', '');
 
-        $this->expectException(FulcioException::class);
-        AmbientCredentials::gitlabCi();
+        // act + assert
+        fact(static fn () => AmbientCredentials::gitlabCi())->throws(FulcioException::class);
     }
 
     private function setEnv(string $name, string $value): void

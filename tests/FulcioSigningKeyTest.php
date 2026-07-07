@@ -79,30 +79,36 @@ final class FulcioSigningKeyTest extends TestCase
 
     public function testFulcioErrorStatusThrows(): void
     {
+        // arrange
         $transport = new MockTransport([
             'fulcio' => fn (): ResponseInterface => $this->response('{"message":"invalid token"}', 400),
         ]);
 
-        $this->expectException(FulcioException::class);
-        FulcioSigningKey::create($this->fulcio($transport), $this->oidcToken());
+        // act + assert
+        fact(fn () => FulcioSigningKey::create($this->fulcio($transport), $this->oidcToken()))
+            ->throws(FulcioException::class);
     }
 
     public function testEmptyChainThrows(): void
     {
+        // arrange
         $transport = new MockTransport([
             'fulcio' => fn (): ResponseInterface => $this->response('{"signedCertificateEmbeddedSct":{"chain":{"certificates":[]}}}'),
         ]);
 
-        $this->expectException(FulcioException::class);
-        FulcioSigningKey::create($this->fulcio($transport), $this->oidcToken());
+        // act + assert
+        fact(fn () => FulcioSigningKey::create($this->fulcio($transport), $this->oidcToken()))
+            ->throws(FulcioException::class);
     }
 
     public function testTokenWithoutSubThrows(): void
     {
+        // arrange
         $noSub = 'h.' . rtrim(strtr(base64_encode((string) json_encode(['iss' => 'x'])), '+/', '-_'), '=') . '.s';
 
-        $this->expectException(FulcioException::class);
-        FulcioSigningKey::create($this->fulcio($this->fulcioTransport()), $noSub);
+        // act + assert
+        fact(fn () => FulcioSigningKey::create($this->fulcio($this->fulcioTransport()), $noSub))
+            ->throws(FulcioException::class);
     }
 
     private function fulcioTransport(): MockTransport

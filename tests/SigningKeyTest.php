@@ -42,20 +42,23 @@ final class SigningKeyTest extends TestCase
 
     public function testRejectsEmptyPublicKey(): void
     {
-        $this->expectException(SigningException::class);
-        SigningKey::publicKey($this->signer(), '', KeyDetails::PKIX_ED25519, 'hint');
+        // act + assert
+        fact(fn () => SigningKey::publicKey($this->signer(), '', KeyDetails::PKIX_ED25519, 'hint'))
+            ->throws(SigningException::class);
     }
 
     public function testRejectsEmptyHint(): void
     {
-        $this->expectException(SigningException::class);
-        SigningKey::publicKey($this->signer(), 'pub', KeyDetails::PKIX_ED25519, '');
+        // act + assert
+        fact(fn () => SigningKey::publicKey($this->signer(), 'pub', KeyDetails::PKIX_ED25519, ''))
+            ->throws(SigningException::class);
     }
 
     public function testRejectsEmptyCertificate(): void
     {
-        $this->expectException(SigningException::class);
-        SigningKey::certificate($this->signer(), '', KeyDetails::PKIX_ED25519);
+        // act + assert
+        fact(fn () => SigningKey::certificate($this->signer(), '', KeyDetails::PKIX_ED25519))
+            ->throws(SigningException::class);
     }
 
     private function signer(): Ed25519Signer
