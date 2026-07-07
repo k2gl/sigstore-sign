@@ -1,6 +1,6 @@
 {
   "name": "k2gl/sigstore-sign",
-  "description": "Sign artifacts and attestations with Sigstore from PHP — sign, log to Rekor, timestamp, and assemble a bundle.",
+  "description": "Sign artifacts and attestations with Sigstore from PHP — sign, log to Rekor, timestamp, and assemble a bundle",
   "homepage": "https://github.com/k2gl/sigstore-sign",
   "type": "library",
   "license": "MIT",
