@@ -57,13 +57,14 @@ final class DerTest extends TestCase
 
     public function testReadRejectsTruncatedData(): void
     {
-        $this->expectException(TimestampException::class);
-        Der::read("\x30", 0);
+        // act + assert
+        fact(static fn () => Der::read("\x30", 0))->throws(TimestampException::class);
     }
 
     public function testReadRejectsLengthPastEnd(): void
     {
-        $this->expectException(TimestampException::class);
-        Der::read("\x04\x0a\x01", 0); // claims 10 content bytes, only 1 present
+        // act + assert
+        fact(static fn () => Der::read("\x04\x0a\x01", 0))
+            ->throws(TimestampException::class); // claims 10 content bytes, only 1 present
     }
 }
