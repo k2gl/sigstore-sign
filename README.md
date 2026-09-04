@@ -77,12 +77,45 @@ $bundleJson = (new SigstoreSigner($rekor, $tsa))->signArtifact($artifact, $key)-
 signing the token's `sub`, and returns a `SigningKey` bound to the issued certificate — the
 same type keyful signing uses, so the rest of the flow is identical.
 
+### Where to sign: the signing config
+
+Sigstore publishes the endpoints to sign against as a TUF target, and a client should read
+them rather than hard-code URLs — Rekor v2 log URLs rotate, and the default public config
+still points at Rekor **v1**. `SigningConfig` parses that target and applies the spec's
+selection rules (validity window, supported API version, and the `ALL` / `ANY` / `EXACT`
+selector, with `EXACT` drawing from distinct operators):
+
+```php
+use K2gl\RekorClient\RekorApiVersion;
+use K2gl\RekorClient\RekorClient;
+use K2gl\SigstoreSign\SigningConfig;
+
+// fetched through k2gl/tuf, next to the trusted root
+$target = $updater->getTargetInfo('signing_config.v0.2.json');
+$config = SigningConfig::fromJson($updater->downloadTarget($target));
+
+$log = $config->rekorLog();
+$rekor = new RekorClient(
+    $psr18, $psr17, $psr17,
+    baseUrl:    $log->url,
+    apiVersion: RekorApiVersion::from($log->majorApiVersion),
+);
+
+$fulcio = new FulcioClient($psr18, $psr17, $psr17, $config->certificateAuthority()->url);
+$tsa = new TsaClient($psr18, $psr17, $psr17, $config->timestampAuthorities()[0]->url);
+```
+
+Selection is against the moment you pass (`at:`, defaulting to now) and the versions you
+support (`supportedApiVersions:`), so a client that speaks only Rekor v1 asks for it and
+gets the v1 log even from a config that lists both.
+
 ### Why the timestamp authority matters
 
 A Rekor v2 entry has no integrated time, so a bundle needs a trusted RFC 3161 timestamp to
 have a verifiable signing time. Pass a `TsaClient` (Sigstore's public-good TSA is
 `timestamp.sigstore.dev`) when signing against Rekor v2 — without it, the bundle logs and
-assembles but will not verify for lack of a time source.
+assembles but will not verify for lack of a time source. A Rekor v1 entry carries its own
+integrated time, so signing against a v1 log needs no TSA.
 
 ### What gets signed
 

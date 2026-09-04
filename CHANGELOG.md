@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- **`SigningConfig`** — reads Sigstore's signing config (the `signing_config.v0.2.json` TUF
+  target) so a signer takes its Fulcio, OIDC, Rekor and timestamp endpoints from the trust
+  root instead of hard-coding them. This is not cosmetic: Rekor v2 log URLs rotate, and the
+  default public config still lists Rekor at major API version 1.
+- Selection follows the spec — a service must have been live at the chosen moment and speak
+  an API version the caller supports, the newest supported version wins (clients must not
+  mix versions), and the `ALL` / `ANY` / `EXACT` selector decides how many come back, with
+  `EXACT` drawing from distinct operators.
+- New `Service` value object and `ServiceSelector` enum; a malformed config or an
+  unsatisfiable selection raises `InvalidSigningConfigException`.
+
 ## 1.1.0
 
 - **Keyless signing** — sign in CI with no long-lived key:
