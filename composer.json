@@ -33,7 +33,7 @@
     "psr/http-message": "^1.1|^2.0",
     "k2gl/dsse": "^1.3",
     "k2gl/sigstore-bundle": "^1.0",
-    "k2gl/rekor-client": "^1.0"
+    "k2gl/rekor-client": "^1.1"
   },
   "require-dev": {
     "phpunit/phpunit": "^10|^11|^12",
