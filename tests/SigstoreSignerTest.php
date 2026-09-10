@@ -36,11 +36,11 @@ final class SigstoreSignerTest extends TestCase
     protected function setUp(): void
     {
         $key = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1']);
-        fact($key !== false)->true();
+        fact($key)->notFalse();
         openssl_pkey_export($key, $pem);
         $this->privateKeyPem = $pem;
         $details = openssl_pkey_get_details($key);
-        fact($details !== false)->true();
+        fact($details)->notFalse();
         $this->publicKeyPem = $details['key'];
         $this->publicKeyDer = base64_decode((string) preg_replace('/-----[^-]+-----|\s/', '', $details['key']), true);
     }
@@ -64,8 +64,8 @@ final class SigstoreSignerTest extends TestCase
         fact($bundle['mediaType'])->is('application/vnd.dev.sigstore.bundle.v0.3+json');
         fact(base64_decode($bundle['messageSignature']['messageDigest']['digest'], true))->is(hash('sha256', $artifact, true));
         fact($bundle['verificationMaterial']['publicKey']['hint'])->is('the-hint');
-        fact(count($bundle['verificationMaterial']['tlogEntries']))->is(1);
-        fact(count($bundle['verificationMaterial']['timestampVerificationData']['rfc3161Timestamps']))->is(1);
+        fact($bundle['verificationMaterial']['tlogEntries'])->count(1);
+        fact($bundle['verificationMaterial']['timestampVerificationData']['rfc3161Timestamps'])->count(1);
     }
 
     public function testSignArtifactSubmitsTheArtifactDigestToRekor(): void
@@ -76,8 +76,8 @@ final class SigstoreSignerTest extends TestCase
         $artifact = 'payload-bytes';
         $signer->signArtifact($artifact, $this->key());
 
-        $sent = json_decode($transport->requestBodyMatching('rekor'), true);
-        fact(base64_decode($sent['hashedRekordRequestV002']['digest'], true))->is(hash('sha256', $artifact, true));
+        fact($transport->requestBodyMatching('rekor'))
+            ->jsonPath('hashedRekordRequestV002.digest', base64_encode(hash('sha256', $artifact, true)));
     }
 
     public function testSignAttestationProducesADsseBundleSignedOverThePae(): void
@@ -94,8 +94,8 @@ final class SigstoreSignerTest extends TestCase
         fact($envelope->verify(PublicKey::fromPem($this->publicKeyPem)))->is($payload);
 
         // Rekor bound the digest of the PAE, not the raw payload.
-        $sent = json_decode($transport->requestBodyMatching('rekor'), true);
-        fact(base64_decode($sent['hashedRekordRequestV002']['digest'], true))->is(hash('sha256', Pae::encode($type, $payload), true));
+        fact($transport->requestBodyMatching('rekor'))
+            ->jsonPath('hashedRekordRequestV002.digest', base64_encode(hash('sha256', Pae::encode($type, $payload), true)));
     }
 
     public function testWithoutATimestampAuthorityTheBundleHasNoTimestamps(): void
@@ -105,7 +105,7 @@ final class SigstoreSignerTest extends TestCase
 
         $bundle = $signer->signArtifact('a', $this->key())->toArray();
 
-        fact(isset($bundle['verificationMaterial']['timestampVerificationData']))->false();
+        fact($bundle['verificationMaterial'])->arrayNotHasKey('timestampVerificationData');
     }
 
     public function testCertificateKeyEmitsACertificateBundle(): void

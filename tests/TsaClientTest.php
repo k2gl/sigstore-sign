@@ -37,7 +37,7 @@ final class TsaClientTest extends TestCase
 
         // messageImprint carries sha256(signature)
         $body = $transport->requestBodyMatching('tsa');
-        fact(str_contains($body, hash('sha256', 'my-signature', true)))->true();
+        fact($body)->containsString(hash('sha256', 'my-signature', true));
     }
 
     public function testReturnsTheFullResponseFromAGrantedResponse(): void
