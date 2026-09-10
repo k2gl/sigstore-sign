@@ -45,7 +45,7 @@ final class FulcioSigningKeyTest extends TestCase
         // The resulting key drives the signer and emits a certificate bundle.
         $rekor = new RekorClient($transport, new Psr17Factory, new Psr17Factory, 'https://rekor.example');
         $bundle = (new SigstoreSigner($rekor))->signArtifact('artifact', $key)->toArray();
-        fact(isset($bundle['verificationMaterial']['certificate']))->true();
+        fact($bundle['verificationMaterial'])->arrayHasKey('certificate');
     }
 
     public function testEmailIdentityProofSignsTheEmailNotTheSub(): void
